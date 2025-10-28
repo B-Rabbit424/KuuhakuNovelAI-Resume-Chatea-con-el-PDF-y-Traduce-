@@ -1,0 +1,5 @@
+{
+  "name": "Novelist's AI Toolkit",
+  "description": "An advanced Angular application that leverages the Gemini API to provide powerful tools for novelists. Upload a PDF manuscript to automatically generate summaries, chat with an AI expert on your story, and translate the entire text while preserving its essence and tone.",
+  "requestFramePermissions": []
+}

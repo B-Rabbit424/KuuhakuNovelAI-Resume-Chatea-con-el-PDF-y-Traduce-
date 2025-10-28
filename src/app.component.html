@@ -1,0 +1,103 @@
+<div class="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans">
+  <header class="w-full p-4 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
+      Novelist's AI Toolkit
+    </h1>
+    @if (pdfFile()) {
+      <button (click)="reset()" class="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200">
+        Cargar Nuevo PDF
+      </button>
+    }
+  </header>
+
+  <main class="flex-grow p-4 md:p-8 flex flex-col items-center">
+    <div class="w-full max-w-6xl mx-auto">
+      @if (currentView() === 'upload') {
+        <div class="w-full max-w-2xl mx-auto mt-16 text-center">
+          <h2 class="text-4xl font-extrabold text-slate-100 mb-4">Potencia tu Escritura</h2>
+          <p class="text-lg text-slate-400 mb-8">Sube tu manuscrito en PDF para empezar a usar las herramientas de IA.</p>
+          <div 
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            [class.border-sky-400]="dragOver()"
+            [class.bg-slate-800/50]="dragOver()"
+            class="relative w-full h-64 border-2 border-dashed border-slate-600 rounded-xl flex flex-col justify-center items-center cursor-pointer transition-all duration-300 hover:border-sky-500 hover:bg-slate-800/30"
+          >
+            <input type="file" (change)="onFileSelected($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf">
+            <svg class="w-16 h-16 text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="text-slate-400"><span class="font-semibold text-sky-400">Haz clic para subir</span> o arrastra y suelta</p>
+            <p class="text-xs text-slate-500 mt-1">Solo archivos PDF</p>
+          </div>
+        </div>
+      } @else {
+        <div class="w-full">
+          @if (isParsing()) {
+            <div class="flex flex-col items-center justify-center h-96">
+              <loading-spinner />
+              <p class="mt-4 text-slate-400">Procesando PDF: {{ pdfFileName() }}...</p>
+            </div>
+          } @else {
+            <div class="flex flex-col md:flex-row gap-8">
+              <aside class="w-full md:w-64 flex-shrink-0">
+                <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <h3 class="font-bold text-lg mb-2 text-slate-200 truncate">{{ pdfFileName() }}</h3>
+                  <nav class="flex flex-col space-y-2">
+                    <button (click)="setView('summary')" [class.bg-sky-500]="currentView() === 'summary'" [class.text-white]="currentView() === 'summary'" class="w-full text-left px-3 py-2 rounded-md hover:bg-slate-700 transition-colors duration-200">Resumir</button>
+                    <button (click)="setView('chat')" [class.bg-sky-500]="currentView() === 'chat'" [class.text-white]="currentView() === 'chat'" class="w-full text-left px-3 py-2 rounded-md hover:bg-slate-700 transition-colors duration-200">Chat AI</button>
+                    <button (click)="setView('translate')" [class.bg-sky-500]="currentView() === 'translate'" [class.text-white]="currentView() === 'translate'" class="w-full text-left px-3 py-2 rounded-md hover:bg-slate-700 transition-colors duration-200">Traducir</button>
+                  </nav>
+                </div>
+              </aside>
+              <div class="flex-grow min-w-0">
+                @switch (currentView()) {
+                  @case ('summary') {
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+                      <h2 class="text-2xl font-bold mb-4 text-slate-100">Generar Resumen</h2>
+                      <p class="text-slate-400 mb-4">¿Hay alguna pregunta específica que te gustaría que el resumen responda?</p>
+                      <textarea [(ngModel)]="summaryQuestion" rows="3" class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none mb-4" placeholder="Ej: ¿Cuál es el conflicto principal del protagonista en los primeros capítulos?"></textarea>
+                      <button (click)="generateSummary()" [disabled]="isLoading()" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200">
+                        @if(isLoading()) { <loading-spinner /> } @else { Generar }
+                      </button>
+                      @if (summaryResult()) {
+                        <div class="mt-6 p-4 bg-slate-900 rounded-lg prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-slate-100">
+                          <p [innerHTML]="summaryResult()"></p>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @case ('chat') {
+                    <chatbot [pdfText]="pdfText()" [chatHistory]="chatHistory" [userChatInput]="userChatInput" [isStreaming]="isStreaming()" (sendMessage)="sendChatMessage()" />
+                  }
+                  @case ('translate') {
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+                      @if (translationState() === 'idle') {
+                        <h2 class="text-2xl font-bold mb-4 text-slate-100">Traductor Experto</h2>
+                        <p class="text-slate-400 mb-6">Hola, soy tu asistente de traducción literaria. Puedo traducir tu novela completa manteniendo el estilo, formato y voz del autor. ¿Empezamos?</p>
+                        <button (click)="translateDocument()" [disabled]="isLoading()" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200">
+                          Traducir Documento Completo
+                        </button>
+                      } @else if (translationState() === 'translating') {
+                        <div class="flex flex-col items-center justify-center h-64">
+                          <loading-spinner />
+                          <p class="mt-4 text-slate-400">Traduciendo... Este proceso puede tardar unos minutos.</p>
+                        </div>
+                      } @else if (translationState() === 'done') {
+                        <h2 class="text-2xl font-bold mb-4 text-slate-100">Traducción Completa</h2>
+                        <div class="mt-6 p-4 bg-slate-900 rounded-lg max-h-[60vh] overflow-y-auto prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-slate-100">
+                          <p [innerHTML]="translationResult()"></p>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </main>
+</div>

@@ -1,0 +1,44 @@
+<div class="flex flex-col h-[70vh] bg-slate-800/50 border border-slate-700 rounded-lg">
+  <div class="flex-grow p-6 overflow-y-auto">
+    <div class="flex flex-col space-y-4">
+      @for(message of chatHistory(); track $index) {
+        <div class="flex" [class.justify-end]="message.role === 'user'">
+          <div 
+            class="max-w-xl px-4 py-3 rounded-2xl"
+            [class.bg-sky-600]="message.role === 'user'"
+            [class.text-white]="message.role === 'user'"
+            [class.bg-slate-700]="message.role === 'model'"
+            [class.text-slate-200]="message.role === 'model'"
+          >
+            <p class="whitespace-pre-wrap">{{ message.parts[0].text }}</p>
+          </div>
+        </div>
+      }
+      @if(isStreaming()) {
+         <div class="flex">
+            <div class="max-w-xl px-4 py-3 rounded-2xl bg-slate-700 text-slate-200">
+                <loading-spinner />
+            </div>
+         </div>
+      }
+    </div>
+  </div>
+  <div class="p-4 bg-slate-800/50 border-t border-slate-700">
+    <div class="flex items-center space-x-4">
+      <input 
+        type="text" 
+        [(ngModel)]="userChatInput" 
+        (keyup.enter)="onSendMessage()"
+        placeholder="Pregunta algo sobre la novela..."
+        class="flex-grow p-3 bg-slate-700 border border-slate-600 rounded-full focus:ring-2 focus:ring-sky-500 focus:outline-none"
+        [disabled]="isStreaming()"
+      />
+      <button (click)="onSendMessage()" [disabled]="isStreaming() || !userChatInput()" class="p-3 bg-sky-600 text-white rounded-full hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+      </button>
+    </div>
+    <p class="text-xs text-center text-slate-500 mt-2">El chat tiene como único contexto el PDF. Puede tener problemas con documentos muy largos.</p>
+  </div>
+</div>
