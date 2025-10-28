@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { GoogleGenAI, GenerateContentResponse, Content } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Content, StreamPart } from "@google/genai";
 
 export interface ChatMessage extends Content {}
 
@@ -11,9 +11,6 @@ export class GeminiService {
   private readonly MODEL = 'gemini-2.5-flash';
 
   constructor() {
-    // IMPORTANT: The API key is sourced from environment variables.
-    // Do not expose it in the client-side code in a real application.
-    // This is a placeholder for the applet environment.
     const apiKey = (window as any).process?.env?.API_KEY || '';
     if (!apiKey) {
       console.error("API_KEY environment variable not set.");
@@ -41,14 +38,47 @@ export class GeminiService {
         model: this.MODEL,
         contents: prompt
       });
-      return this.formatText(response.text);
+      return response.text;
     } catch (error) {
       console.error("Gemini API error in generateSummary:", error);
-      return "Error: No se pudo generar el resumen. Verifica la configuración de la API Key o la conexión.";
+      throw new Error("No se pudo generar el resumen. Verifica la configuración de la API Key o la conexión.");
+    }
+  }
+
+  async refineSummary(originalText: string, previousSummary: string, request: string): Promise<string> {
+    const prompt = `
+      Eres un experto literario. Tu tarea es refinar un resumen existente de una novela basándote en la petición del usuario.
+
+      Petición del usuario para el refinamiento: "${request}"
+
+      Resumen Anterior:
+      ---
+      ${previousSummary}
+      ---
+
+      Contexto del texto original (fragmento para referencia):
+      ---
+      ${originalText.substring(0, 50000)}
+      ---
+
+      Por favor, genera un nuevo resumen mejorado que incorpore la petición del usuario, manteniendo un tono literario y elocuente. No incluyas preámbulos, solo el resumen refinado.
+
+      Nuevo Resumen Refinado:
+    `;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL,
+        contents: prompt
+      });
+      return response.text;
+    } catch (error) {
+        console.error("Gemini API error in refineSummary:", error);
+        throw new Error("No se pudo refinar el resumen.");
     }
   }
   
-  chatWithContextStream(context: string, history: ChatMessage[]) {
+  chatWithContextStream(context: string, history: ChatMessage[]): AsyncGenerator<StreamPart> {
     const systemInstruction = `
       Eres un chatbot experto en la novela proporcionada. Tu único contexto es el texto de esta novela. 
       Responde las preguntas del usuario basándote exclusivamente en este texto. 
@@ -84,15 +114,15 @@ export class GeminiService {
         model: this.MODEL,
         contents: prompt
       });
-      return this.formatText(response.text);
+      return response.text;
     } catch (error) {
       console.error("Gemini API error in translateText:", error);
-      return "Error: No se pudo traducir el texto.";
+      throw new Error("Error: No se pudo traducir el texto.");
     }
   }
 
-  private formatText(text: string): string {
+  public formatText(text: string): string {
     // Basic formatting: replace newlines with <br> for HTML display
-    return text.replace(/\n/g, '<br>');
+    return text.replace(/\n\g, '<br>');
   }
 }

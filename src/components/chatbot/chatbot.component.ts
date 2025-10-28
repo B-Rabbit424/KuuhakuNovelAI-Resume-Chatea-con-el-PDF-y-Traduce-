@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, WritableSignal, ElementRef, viewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatMessage } from '../../services/gemini.service';
@@ -13,13 +13,31 @@ import { LoadingSpinnerComponent } from '../loading-spinner.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatbotComponent {
-  pdfText = input.required<string>();
-  chatHistory = input.required<WritableSignal<ChatMessage[]>>();
-  userChatInput = input.required<WritableSignal<string>>();
+  chatHistory = input.required<ChatMessage[]>();
+  userChatInput: WritableSignal<string> = input.required<WritableSignal<string>>();
   isStreaming = input.required<boolean>();
   sendMessage = output<void>();
 
+  chatContainer = viewChild<ElementRef<HTMLDivElement>>('chatContainer');
+
+  constructor() {
+    effect(() => {
+      // This effect runs whenever chatHistory changes.
+      this.chatHistory(); 
+      this.scrollToBottom();
+    });
+  }
+  
   onSendMessage() {
     this.sendMessage.emit();
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      const element = this.chatContainer()?.nativeElement;
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+      }
+    }, 0);
   }
 }

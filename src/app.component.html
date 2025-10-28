@@ -59,17 +59,35 @@
                       <p class="text-slate-400 mb-4">¿Hay alguna pregunta específica que te gustaría que el resumen responda?</p>
                       <textarea [(ngModel)]="summaryQuestion" rows="3" class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none mb-4" placeholder="Ej: ¿Cuál es el conflicto principal del protagonista en los primeros capítulos?"></textarea>
                       <button (click)="generateSummary()" [disabled]="isLoading()" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200">
-                        @if(isLoading()) { <loading-spinner /> } @else { Generar }
+                        @if(isLoading() && !rawSummaryResult()) { <loading-spinner /> } @else { Generar Resumen Inicial }
                       </button>
+
+                      @if (isLoading() && !rawSummaryResult()) {
+                        <div class="mt-6 flex flex-col items-center justify-center">
+                          <loading-spinner />
+                          <p class="mt-4 text-slate-400">Generando resumen...</p>
+                        </div>
+                      }
+                      
                       @if (summaryResult()) {
-                        <div class="mt-6 p-4 bg-slate-900 rounded-lg prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-slate-100">
-                          <p [innerHTML]="summaryResult()"></p>
+                        <div class="mt-6 p-4 bg-slate-900 rounded-lg prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-slate-100 max-h-[40vh] overflow-y-auto">
+                           <h3 class="!text-xl !font-bold !mt-0">Resumen Generado</h3>
+                           <p [innerHTML]="summaryResult()"></p>
+                        </div>
+                        
+                        <div class="mt-6 pt-6 border-t border-slate-700">
+                          <h3 class="text-xl font-bold mb-4 text-slate-100">Refinar Resumen</h3>
+                          <p class="text-slate-400 mb-4">Pide cambios para mejorar el resumen. Por ejemplo, "hazlo más corto" o "enfócate más en el desarrollo del personaje secundario".</p>
+                          <textarea [(ngModel)]="redoSummaryRequest" [disabled]="isLoading()" rows="3" class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none mb-4 disabled:opacity-50" placeholder="¿Qué cambios te gustaría hacer?"></textarea>
+                          <button (click)="redoSummary()" [disabled]="isLoading() || !redoSummaryRequest()" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200">
+                            @if(isLoading() && rawSummaryResult()) { <loading-spinner /> } @else { Rehacer Resumen }
+                          </button>
                         </div>
                       }
                     </div>
                   }
                   @case ('chat') {
-                    <chatbot [pdfText]="pdfText()" [chatHistory]="chatHistory" [userChatInput]="userChatInput" [isStreaming]="isStreaming()" (sendMessage)="sendChatMessage()" />
+                    <chatbot />
                   }
                   @case ('translate') {
                     <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
